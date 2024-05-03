@@ -1,4 +1,4 @@
-# 2024 Sequencing exosomal RNA from pla
+# 2024 Sequencing exosomal RNA from plasma and urine of SLE and controls
 
 For this project, we received isolated exosomes from different biofluids and generated sequencing libraries with the Takeda small RNA kit. After mapping, we saw substantial read coverage overlapping not just miRs, but coding genes. These may be transcript fragments or promoter-associated RNAs. The count matrices, normalized expression, and differential expression results can be found in the FigShare project.
 
