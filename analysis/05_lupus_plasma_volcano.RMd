@@ -1,0 +1,62 @@
+---
+title: "volcano of lupus vs. control plasma"
+author: "Eli Roberson"
+date: "May 03, 2024"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r load_libraries}
+library( here )
+library( ggrepel )
+library( cowplot )
+library( tidyverse )
+```
+
+```{r source}
+source( file = here( "src", "shared_functions.R" ) )
+```
+
+```{r results_make}
+dir.create( path = here( 'results', 'figures' ), 
+            showWarnings = FALSE, 
+            recursive = TRUE )
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	fig.path = paste0( here( 'results', 'figures' ), "/" ),
+	fig.keep = 'all',
+	dpi = 300
+)
+```
+
+```{r lupus_v_control_plasma_volcano}
+case <- "LupusNephritis"
+control <- "Control"
+tissue <- "plasma"
+
+plot_title = "SLE LN vs. Healthy"
+
+dat <- read_tsv( 
+  file = here( "results", 
+               "SLE_over_Control_plasma_deseq2_deg.tsv.gz" ) )
+
+volcano_ggplot <- make_ggplot_volcano( deg_dataframe = dat,
+                                       case_name = "LN",
+                                       control_name = "Control",
+                                       title_string = plot_title,
+                                       axis_step = 4 )
+
+volcano_ggplot
+```
+
+# Session info
+```{r versions}
+Sys.time()
+getwd()
+sessionInfo()
+```

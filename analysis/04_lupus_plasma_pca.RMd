@@ -1,0 +1,147 @@
+---
+title: "PCA plot of lupus vs. control plasma"
+author: "Eli Roberson"
+date: "May 03, 2024"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r load_libraries}
+library( here )
+library( tidyverse )
+library( reshape2 )
+```
+
+```{r source}
+source( file = here( "src", "shared_functions.R" ) )
+```
+
+```{r results_make}
+dir.create( path = here( 'results', 'figures' ), 
+            showWarnings = FALSE, 
+            recursive = TRUE )
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	fig.path = paste0( here( 'results', 'figures' ), "/" ),
+	fig.keep = 'all',
+	dpi = 300
+)
+```
+
+```{r read_rginfo}
+info <- read_tsv( file = here( 'info', 'project_info.tsv' ) ) %>%
+  filter( status %in% c( "SLE", "Control" ) ) %>%
+  filter( tissue == 'plasma_exosomes' ) %>%
+  as.data.frame( . )
+rownames( info ) = info$rgsm
+
+with( info, table( tissue, status ) )
+```
+
+```{r rlog}
+rlog  <- read_tsv( file = here( "results", "full_control_lupus_rlog.tsv.gz" ), 
+                   col_names = TRUE, 
+                   col_types = cols( .default = col_double(), 
+                                     "gene_id" = col_character() ) ) %>%
+  as.data.frame( . ) %>%
+  column_to_rownames( 'gene_id' ) %>%
+  as.matrix( . )
+
+keep_sample_ids <- intersect( x = info$rgsm,
+                              y = colnames( rlog ) )
+
+rlog <- rlog[ , keep_sample_ids ]
+
+info <- info[ keep_sample_ids, ]
+```
+
+```{r pull_genes}
+gene_list <- read_tsv( 
+  file = here( "results", 
+               "SLE_over_Control_plasma_deseq2_deg.tsv.gz" ) ) %>%
+  arrange( qval, pval ) %>%
+  slice_head( n = 20 ) %>%
+  pull( gene_id )
+```
+
+```{r gene_source_pca}
+pca_out <- rlog[ gene_list, ] %>%
+  as.data.frame( . ) %>%
+  as.matrix( . ) %>%
+  t( . ) %>%
+  prcomp( x = ., scale. = FALSE )
+
+percent_variance <- round( pca_out$sdev^2 / sum( pca_out$sdev^2 )* 100.0, 2 )
+
+pca_plot_input <- pca_out$x %>%
+  as.data.frame( . ) %>%
+  rownames_to_column( "rgsm" ) %>%
+  merge( ., select( info, rgsm, tissue, status ), by = 'rgsm' )
+```
+
+```{r cluster}
+# Add clusters
+clusters <- pca_plot_input %>%
+  select( ., PC1, PC2 ) %>%
+	kmeans( x = ., centers = 2 )
+
+pca_plot_input$cluster_num <- clusters$cluster
+pca_plot_input$cluster <- LETTERS[ clusters$cluster ]
+```
+
+```{r pca_allgene_lupus_plasma}
+first_plot_pc <- 1
+second_plot_pc <- 2
+
+x_dim_name <- paste0( "PC", 
+                      first_plot_pc, 
+                      " (", 
+                      percent_variance[ first_plot_pc ], 
+                      "%)" )
+
+y_dim_name <- paste0( "PC", 
+                      second_plot_pc, 
+                      " (", 
+                      percent_variance[ second_plot_pc ], 
+                      "%)" )
+
+# important note
+# for some reason the initial generation code gave reversed PC2 axes.
+# If you want the pure PC output, set flip PC2 to false
+
+flip_pc_2 = TRUE
+
+if ( flip_pc_2 ) { 
+  flip_factor = -1.0
+} else {
+  flip_factor = 1.0
+}
+
+pca_plot <- ggplot( data = pca_plot_input, 
+                    mapping = aes( PC1, 
+                                   flip_factor * PC2, 
+                                   shape = status, 
+                                   colour = status ) ) +
+  theme_bw() +
+  scale_color_manual( values = colorBlindPalette ) +
+  geom_point( size = 5 ) +
+  gg_bigger_texts +
+  gg_center_title +
+  xlab( x_dim_name ) +
+  ylab( y_dim_name ) +
+  theme( legend.position = 'top' )
+
+pca_plot
+```
+
+# Session info
+```{r versions}
+Sys.time()
+getwd()
+sessionInfo()
+```

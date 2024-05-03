@@ -1,0 +1,68 @@
+---
+title: "Download relevant data from GitHub"
+author: "Eli Roberson"
+date: "May 03, 2024"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r libraries}
+library( here )
+library( tidyverse )
+```
+
+```{r results_make}
+dir.create( path = here( 'results', 'figures' ), 
+            showWarnings = FALSE, 
+            recursive = TRUE )
+
+dir.create( path = here( 'data' ) )
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE
+)
+```
+
+```{r link_to_path_map}
+file_link_map <- list(
+  'counts' = list(
+    'https://figshare.com/ndownloader/files/46080135',
+    here('data', 'exosome_counts.tsv.gz')
+  ),
+  'rlog' = list(
+    'https://figshare.com/ndownloader/files/46080159',
+    here('results', 'full_control_lupus_rlog.tsv.gz')
+  ),
+  'deg' = list(
+    'https://figshare.com/ndownloader/files/46080168',
+    here('results', 'SLE_over_Control_plasma_deseq2_deg.tsv.gz')
+  )
+)
+```
+
+```{r grab}
+for ( idx in 1:length( file_link_map ) ) {
+  url = file_link_map[[ idx ]][1] %>% 
+    as.character( . )
+  
+  dest = file_link_map[[ idx ]][2] %>% 
+    as.character( . )
+  
+  cat( paste0( "URL: ", url, "\n" ) )
+  cat( paste0( "Path: ", dest, "\n" ) )
+  
+  download.file( url = url, 
+                 destfile = dest, 
+                 mode = 'wb' )
+}
+```
+
+```{r versions}
+Sys.time()
+getwd()
+sessionInfo()
+```
